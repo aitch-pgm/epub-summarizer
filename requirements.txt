@@ -1,0 +1,6 @@
+ebooklib>=0.18
+beautifulsoup4>=4.12
+lxml>=5.0
+transformers>=4.36
+torch>=2.0
+tqdm>=4.66
