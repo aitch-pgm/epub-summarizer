@@ -3,6 +3,11 @@ import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
 
+SKIP_TITLES = {
+    "table of contents", "contents", "copyright", "title page",
+    "license", "gutenberg",
+}
+
 
 def _get_title(book):
     title = book.get_metadata("DC", "title")
@@ -14,66 +19,59 @@ def _get_author(book):
     return creator[0][0] if creator else "Unknown Author"
 
 
-def _clean_text(html):
-    soup = BeautifulSoup(html, "lxml")
-    for elem in soup(["script", "style", "nav"]):
-        elem.decompose()
-    text = soup.get_text(separator=" ")
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-def _build_toc_map(toc_entries, result=None):
-    if result is None:
-        result = {}
-    for entry in toc_entries:
-        if isinstance(entry, epub.Link):
-            href = entry.href.split("#")[0]
-            result[href] = entry.title
-        elif isinstance(entry, tuple):
-            _build_toc_map(entry[1], result)
+def _file_map(book):
+    result = {}
+    for item in book.get_items():
+        if item.get_type() == ebooklib.ITEM_DOCUMENT:
+            result[item.get_name()] = item
     return result
+
+
+def _collect_toc_entries(toc):
+    entries = []
+    for entry in toc:
+        if isinstance(entry, epub.Link):
+            parts = entry.href.split("#", 1)
+            if len(parts) == 2:
+                skip = any(kw in entry.title.lower() for kw in SKIP_TITLES)
+                entries.append(
+                    {
+                        "title": entry.title.strip(),
+                        "file": parts[0],
+                        "fragment": parts[1],
+                        "skip": skip,
+                    }
+                )
+        elif isinstance(entry, tuple):
+            entries.extend(_collect_toc_entries(entry[1]))
+    return entries
+
+
+def _text_for_fragment(soup, frag_id):
+    el = soup.find(id=frag_id)
+    if el is None:
+        return ""
+    text = el.get_text(separator=" ", strip=True)
+    return re.sub(r"\s+", " ", text)
 
 
 def extract_chapters(epub_path):
     book = epub.read_epub(epub_path)
     title = _get_title(book)
     author = _get_author(book)
-    toc_map = _build_toc_map(book.toc)
+    files = _file_map(book)
+    toc_entries = _collect_toc_entries(book.toc)
 
     chapters = []
-    seen_names = set()
-
-    for spine_id, _ in book.spine:
-        item = book.get_item_with_id(spine_id)
-        if item is None or item.get_type() != ebooklib.ITEM_DOCUMENT:
+    for entry in toc_entries:
+        if entry["skip"]:
             continue
-
-        name = item.get_name()
-        if name in seen_names:
+        item = files.get(entry["file"])
+        if item is None:
             continue
-        seen_names.add(name)
-
-        chapter_title = toc_map.get(name) or toc_map.get("/" + name)
-
-        content = item.get_content()
-        soup = BeautifulSoup(content, "lxml")
-
-        if not chapter_title:
-            if soup.title and soup.title.string:
-                chapter_title = soup.title.string.strip()
-            else:
-                for tag in ["h1", "h2", "h3", "h4"]:
-                    heading = soup.find(tag)
-                    if heading and heading.get_text(strip=True):
-                        chapter_title = heading.get_text(strip=True)
-                        break
-
-        if not chapter_title:
-            chapter_title = f"Chapter {len(chapters) + 1}"
-
-        text = _clean_text(content)
-        if text:
-            chapters.append({"title": chapter_title, "text": text})
+        soup = BeautifulSoup(item.get_content(), "lxml")
+        text = _text_for_fragment(soup, entry["fragment"])
+        if text and len(text.split()) >= 100:
+            chapters.append({"title": entry["title"], "text": text})
 
     return {"title": title, "author": author, "chapters": chapters}

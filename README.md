@@ -26,9 +26,9 @@ This produces `book_summary.txt` with a chapter-by-chapter summary.
 | Flag | Description |
 |------|-------------|
 | `-o, --output` | Output file path |
-| `-m, --model` | Model for basic summaries (default: `andreaparker/long-summ`) |
+| `-m, --model` | Model for basic summaries (default: `google/pegasus-xsum`) |
 | `--detailed` | Also generate a structured summary (Key Ideas, Golden Nuggets, etc.) |
-| `--detailed-model` | Model for detailed summaries (default: `microsoft/Phi-3-mini-4k-instruct`) |
+| `--detailed-model` | Model for detailed summaries (default: `Qwen/Qwen2.5-1.5B-Instruct`) |
 | `--device` | Override device: `cpu`, `cuda`, or `mps` |
 | `--max-chapters` | Only summarize the first N chapters |
 
@@ -86,13 +86,15 @@ You can run with `--detailed` to get both, or just the basic `_summary.txt` for 
 | Model | Context | Params | Notes |
 |---|---|---|---|
 | `andreaparker/long-summ` | 16K | 400M | LED fine-tuned on BookSum. Default. |
-| `pszemraj/long-t5-tglobal-base-16384-book-summary` | 16K | 600M | LongT5 fine-tuned on BookSum. Best quality. |
+| `google/pegasus-xsum` | 16K | 600M | Extreme summarization. Default. |
+| `andreaparker/long-summ` | 16K | 400M | LED fine-tuned on BookSum. Requires git-lfs. |
 | `pszemraj/pegasus-x-large-book-summary` | 16K | 600M | Pegasus fine-tuned on BookSum. Strong abstractive summaries. |
 
 ### For structured detailed summaries (`--detailed-model` / `_detailed.txt`)
 
 | Model | Context | Params | Notes |
 |---|---|---|---|
-| `microsoft/Phi-3-mini-4k-instruct` | 4K | 3.8B | Excellent instruction following, fast on Apple Silicon. Default. |
+| `Qwen/Qwen2.5-1.5B-Instruct` | 32K (capped to 4K on MPS) | 1.5B | Best quality, handles structured output well. Default. |
+| `microsoft/Phi-3-mini-4k-instruct` | 4K | 3.8B | Excellent instruction following, but slower. |
 | `Qwen/Qwen2.5-7B-Instruct` | 32K | 7B | Handles very long chapters, best structured output. |
 | `meta-llama/Llama-3.2-3B-Instruct` | 8K | 3B | Good balance of size and quality. |

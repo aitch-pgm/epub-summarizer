@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from epub_parser import extract_chapters
-from summarizer import Summarizer, DEFAULT_MODEL, DETAILED_MODEL
+from summarizer import Summarizer, InstructSummarizer, DEFAULT_MODEL, DETAILED_MODEL
 from output import write_summary, write_detailed_summary
 
 
@@ -68,12 +68,12 @@ def main():
         write_summary(info, summaries, args.model, output_path)
         print(f"Summary written to {output_path}")
 
-        detailed_model = args.detailed_model
-        print(f"Loading detailed model '{detailed_model}' ...")
-        detailed_summarizer = Summarizer(model_name=detailed_model, device=args.device)
-        detailed = detailed_summarizer.summarize_chapters_structured(chapters)
+        detailed_summarizer = InstructSummarizer(
+            model_name=args.detailed_model, device=args.device
+        )
+        detailed = detailed_summarizer.summarize_chapters(chapters)
         detailed_path = f"{args.epub.rsplit('.', 1)[0]}_detailed.txt"
-        write_detailed_summary(info, detailed, detailed_model, detailed_path)
+        write_detailed_summary(info, detailed, args.detailed_model, detailed_path)
         print(f"Detailed summary written to {detailed_path}")
     else:
         summaries = summarizer.summarize_chapters(chapters)
