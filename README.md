@@ -60,9 +60,24 @@ python main.py book.epub --device cpu
 1. **Parse** — extracts table of contents, chapter titles, and text from the EPUB
 2. **Chunk** — splits chapters longer than the model's context window at sentence boundaries
 3. **Summarize** — runs each chunk through the model
-4. **Output** — writes one or two `.txt` files:
-   - `_summary.txt` — concise per-chapter summaries (encoder-decoder model like LongT5/LED)
-   - `_detailed.txt` — structured summaries with Key Ideas, Golden Nuggets, etc. (instruction-tuned model like Phi-3)
+4. **Output** — writes one or two `.txt` files (see below)
+
+## Output files
+
+| File | When generated | Model type | Format |
+|---|---|---|---|
+| `book_summary.txt` | Always | Encoder-decoder (e.g. LongT5, LED) | One concise paragraph per chapter |
+| `book_detailed.txt` | Only with `--detailed` | Instruction-tuned LLM (e.g. Phi-3) | Structured sections per chapter |
+
+`_summary.txt` is a short, extracted summary — good for quickly recalling what happens in each chapter.  
+`_detailed.txt` uses a prompt to produce a structured breakdown per chapter with the following sections:
+
+- **Key Ideas** — main points and arguments
+- **Golden Nuggets** — most valuable quotes or concepts
+- **Practical and Applicable** — principles or advice you can use
+- **Paradigms and Thinking Models** — mental models introduced in the chapter
+
+You can run with `--detailed` to get both, or just the basic `_summary.txt` for a faster, lighter result.
 
 ## Recommended models
 
